@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web-ui:
+    image: aolb/localstack-web-ui:latest
+    container_name: localstack-web-ui-windmill
+    ports:
+      - "4000:80"
+    networks:
+      - windmill-net
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack-windmill
+    ports:
+      - "4566:4566"  # Edge port for all services
+      - "4571:4571"
+    environment:
+      - SERVICES=sns,sqs
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "localstack_windmill_data:/var/lib/localstack"
+    networks:
+      - windmill-net
+
+volumes:
+  localstack_windmill_data:
+
+networks:
+  windmill-net:
+    driver: bridge
