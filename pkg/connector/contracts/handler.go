@@ -1,8 +1,15 @@
 package contracts
 
-type HandlerFunc func(topic string, msg []byte) [][]byte
+type HandlerFunc func(msg []byte) [][]byte
+
+type HandlerDef struct {
+	Topic       string
+	ActionType  string
+	HandlerFunc HandlerFunc
+}
 
 type Handler interface {
-	Handle(topic string, hf HandlerFunc)
+	Handle(topic, actionType string, hf HandlerFunc)
+	Handlers(hd ...HandlerDef)
 	Run() error
 }

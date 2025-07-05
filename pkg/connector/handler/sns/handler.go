@@ -13,6 +13,7 @@ import (
 	amazonsqs "github.com/aws/aws-sdk-go-v2/service/sqs"
 	transport "github.com/aws/smithy-go/endpoints"
 	"github.com/olbrichattila/evmagic/pkg/connector/contracts"
+	baseHandler "github.com/olbrichattila/evmagic/pkg/connector/handler"
 	"github.com/samber/lo"
 )
 
@@ -24,7 +25,11 @@ const (
 )
 
 func New() (contracts.Handler, error) {
-	h := &handler{}
+	h := &handler{
+		Handler: baseHandler.Handler{
+			Topics: map[string]map[string]contracts.HandlerFunc{},
+		},
+	}
 	err := h.setHandlerConf()
 	if err != nil {
 		return nil, err
@@ -34,6 +39,7 @@ func New() (contracts.Handler, error) {
 }
 
 type handler struct {
+	baseHandler.Handler
 	subscriber message.Subscriber
 	router     *message.Router
 }
@@ -43,20 +49,14 @@ func (h *handler) Run() error {
 	return h.router.Run(context.Background())
 }
 
-// Handle implements contracts.Handler.
-func (h *handler) Handle(topic string, hf contracts.HandlerFunc) {
-	// shell I work with the returned *message.handler?
-	h.router.AddHandler(
-		topic,
-		topic, // SQS queue to subscribe to
-		h.subscriber,
-		topic, // SQS queue to publish to
-		nil,
-		func(msg *message.Message) ([]*message.Message, error) {
-			hf(topic, msg.Payload)
-			return nil, nil
-		},
-	)
+func (h *handler) Handlers(hd ...contracts.HandlerDef) {
+	for _, hDef := range hd {
+		h.Handle(hDef.Topic, hDef.ActionType, hDef.HandlerFunc)
+	}
+}
+
+func (h *handler) Handle(topic, actionType string, hf contracts.HandlerFunc) {
+	h.Handler.InternalHandle(h.router, h.subscriber, topic, actionType, hf)
 }
 
 func (h *handler) setHandlerConf() error {
