@@ -2,20 +2,15 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
+	"time"
 
-	"github.com/ThreeDotsLabs/watermill"
-	"github.com/ThreeDotsLabs/watermill-aws/sns"
-	"github.com/ThreeDotsLabs/watermill/message"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/samber/lo"
+	"app/actions"
 
-	amazonsns "github.com/aws/aws-sdk-go-v2/service/sns"
-	transport "github.com/aws/smithy-go/endpoints"
+	frameworkAction "github.com/olbrichattila/evmagic/pkg/actions/framework-action"
+	"github.com/olbrichattila/evmagic/pkg/connector"
 )
 
 const (
@@ -46,7 +41,7 @@ func getPrompt() string {
 			break
 		}
 
-		lines = lines + text
+		lines = lines + text + "\n"
 
 	}
 
@@ -58,43 +53,16 @@ func getPrompt() string {
 }
 
 func sendMessage(messageToPublish string) {
-	action := blogAction{Blog: messageToPublish}
-	messageJSON, _ := json.Marshal(action)
-	publisher := getSNSPublisher()
-
-	msg := message.NewMessage(watermill.NewUUID(), messageJSON)
-	if err := publisher.Publish(topicName, msg); err != nil {
-		panic(err)
-	}
-}
-
-func getSNSPublisher() message.Publisher {
-	logger := watermill.NewStdLogger(false, false)
-	snsOpts := []func(*amazonsns.Options){
-		amazonsns.WithEndpointResolverV2(sns.OverrideEndpointResolver{
-			Endpoint: transport.Endpoint{
-				URI: *lo.Must(url.Parse(awsURI)),
-			},
-		}),
-	}
-
-	topicResolver, err := sns.NewGenerateArnTopicResolver(awsAccountID, awsRegion)
+	snsPublisher, err := connector.Publisher(connector.TypeSNS)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
-	publisherConfig := sns.PublisherConfig{
-		AWSConfig: aws.Config{
-			Credentials: aws.AnonymousCredentials{},
-		},
-		OptFns:        snsOpts,
-		TopicResolver: topicResolver,
-	}
+	frameworkAction.PublishFromStruct[actions.BlogReceivedAction](snsPublisher, "new-posts", "blog-received", actions.BlogReceivedAction{
+		CreatedAt: time.Now(),
+		CreatedBy: "John Doe",
+		Blog:      messageToPublish,
+	})
 
-	publisher, err := sns.NewPublisher(publisherConfig, logger)
-	if err != nil {
-		panic(err)
-	}
-
-	return publisher
 }

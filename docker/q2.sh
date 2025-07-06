@@ -3,7 +3,7 @@ set -euo pipefail
 
 AWS="aws --endpoint-url=http://localhost:4566 --region us-east-1"
 TOPIC_NAME="post-processed"
-QUEUES=("profanity-check-failed-queue" "spam-check-failed-queue" "plagiarism-failed-check-queue")
+QUEUES=("check-failed-queue")
 
 echo "Creating SNS topic: $TOPIC_NAME"
 TOPIC_ARN=$($AWS sns create-topic --name "$TOPIC_NAME" --query 'TopicArn' --output text)

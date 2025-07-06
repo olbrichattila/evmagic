@@ -13,7 +13,7 @@ type Handler struct {
 }
 
 // InternalHandle implements contracts.Handler.
-func (h *Handler) InternalHandle(router *message.Router, subscriber message.Subscriber, topic, actionType string, hf contracts.HandlerFunc) {
+func (h *Handler) InternalHandle(router *message.Router, subscriber message.Subscriber, publisher contracts.Publisher, topic, actionType string, hf contracts.HandlerFunc) {
 	if existingTopic, ok := h.Topics[topic]; ok {
 		existingTopic[actionType] = hf
 		return
@@ -37,8 +37,16 @@ func (h *Handler) InternalHandle(router *message.Router, subscriber message.Subs
 			}
 
 			if handleFnc, ok := h.Topics[topic][actionType]; ok {
-				handleFnc(msg.Payload)
-				return nil, nil
+				actionsToPublish, err := handleFnc(msg.Payload)
+				if err == nil {
+					for _, msgToPub := range actionsToPublish {
+						err := publisher.Publish(msgToPub.Topic, msgToPub.Body)
+						if err != nil {
+							return nil, err
+						}
+					}
+				}
+				return nil, err
 			}
 
 			// TODO log

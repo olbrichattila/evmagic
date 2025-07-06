@@ -27,7 +27,7 @@ func main() {
 		return
 	}
 
-	routes.InitRoutes(sqsHandler)
+	routes.InitRoutes(sqsHandler, snsPublisher)
 	go sqsHandler.Run()
 	sendTestMessages(snsPublisher)
 

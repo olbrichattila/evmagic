@@ -50,12 +50,12 @@ func (h *handler) Run() error {
 
 func (h *handler) Handlers(hd ...contracts.HandlerDef) {
 	for _, hDef := range hd {
-		h.Handle(hDef.Topic, hDef.ActionType, hDef.HandlerFunc)
+		h.Handle(hDef.Topic, hDef.ActionType, hDef.Publisher, hDef.HandlerFunc)
 	}
 }
 
-func (h *handler) Handle(topic, actionType string, hf contracts.HandlerFunc) {
-	h.Handler.InternalHandle(h.router, h.subscriber, topic, actionType, hf)
+func (h *handler) Handle(topic, actionType string, publisher contracts.Publisher, hf contracts.HandlerFunc) {
+	h.Handler.InternalHandle(h.router, h.subscriber, publisher, topic, actionType, hf)
 }
 
 func (h *handler) setHandlerConf() error {

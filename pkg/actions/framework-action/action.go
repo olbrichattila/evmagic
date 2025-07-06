@@ -17,9 +17,11 @@ type Action[T any] interface {
 	CausationId() string
 	MessageIdentifier() string
 	ActionType() string
+	Topic() string
 }
 
 type ActionBase[T any] struct {
+	Topic             string `json:"topic"`
 	CorrelationId     string `json:"correlationId"`
 	CausationId       string `json:"causationId"`
 	MessageIdentifier string `json:"messageIdentifier"`
@@ -41,30 +43,12 @@ type action[T any] struct {
 	base ActionBase[T]
 }
 
-func AsSNSActionFromPayload(data []byte) (SnsAction, error) {
-	return helpers.ToStruct[SnsAction](data)
-}
-
-func ActionTypeFromPayload(data []byte) (string, error) {
-	act, err := AsSNSActionFromPayload(data)
-	if err != nil {
-		return "", err
-	}
-
-	res, err := helpers.ToStruct[actionType]([]byte(act.Message))
-	if err != nil {
-		return "", err
-	}
-
-	return res.ActionType, nil
-
-}
-
-func New[T any](actionType string, content any) (Action[T], error) {
+func New[T any](topic, actionType string, content any) (Action[T], error) {
 	result := action[T]{}
 	result.base = ActionBase[T]{
 		CorrelationId:     uuid.NewString(),
 		CausationId:       uuid.NewString(),
+		Topic:             topic,
 		MessageIdentifier: uuid.NewString(),
 		ActionType:        actionType,
 		Content:           content.(T),
@@ -113,4 +97,8 @@ func (a action[T]) MessageIdentifier() string {
 
 func (a action[T]) ActionType() string {
 	return a.base.ActionType
+}
+
+func (a action[T]) Topic() string {
+	return a.base.Topic
 }
