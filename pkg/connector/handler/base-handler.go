@@ -47,7 +47,7 @@ func (h *Handler) InternalHandle(router *message.Router, replay contracts.Replay
 			}
 
 			// Message replay
-			replayed, err := replay.Replay(actionInfo.MessageIdentifier)
+			replayed, err := replay.Replay(topic + "_" + actionInfo.MessageIdentifier)
 			if err != nil {
 				// TODO log
 				tx.Rollback()
@@ -61,21 +61,32 @@ func (h *Handler) InternalHandle(router *message.Router, replay contracts.Replay
 
 			if handleFnc, ok := h.Topics[topic][actionInfo.ActionType]; ok {
 				actionsToPublish, err := handleFnc(tx, msg.Payload)
-				if err == nil {
-					for _, msgToPub := range actionsToPublish {
-						err := publisher.Publish(msgToPub.Topic, msgToPub.Body)
-						if err != nil {
-							// TODO log
-							tx.Rollback()
-							return nil, err
-						}
+				if err != nil {
+					// TODO log
+					tx.Rollback()
+					return nil, err
+				}
 
-						err = replay.Store(actionInfo.MessageIdentifier, msgToPub.Body)
-						if err != nil {
-							// TODO log
-							tx.Rollback()
-							return nil, err
-						}
+				err = replay.Register(topic + "_" + actionInfo.MessageIdentifier)
+				if err != nil {
+					// TODO log
+					tx.Rollback()
+					return nil, err
+				}
+
+				for _, msgToPub := range actionsToPublish {
+					err := publisher.Publish(msgToPub.Topic, msgToPub.Body)
+					if err != nil {
+						// TODO log
+						tx.Rollback()
+						return nil, err
+					}
+
+					err = replay.Store(topic+"_"+actionInfo.MessageIdentifier, msgToPub.Body)
+					if err != nil {
+						// TODO log
+						tx.Rollback()
+						return nil, err
 					}
 				}
 

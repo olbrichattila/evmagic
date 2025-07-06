@@ -8,11 +8,13 @@ import (
 	"github.com/olbrichattila/evmagic/pkg/connector/contracts"
 )
 
-func createFailedActionResult[T any](actionType, reason string, parentAct *frameworkAction.ActionData) []contracts.ActionResult {
+func createFailedActionResult(blogID int64, actionType, reason, checkType string, parentAct *frameworkAction.ActionData) []contracts.ActionResult {
 	return []contracts.ActionResult{
-		frameworkAction.CreateActionResult[actions.FailedPlagiarismCheckAction]("post-processed", actionType, actions.FailedPlagiarismCheckAction{
-			FailedAt: time.Now(),
-			Reason:   reason,
+		frameworkAction.CreateActionResult[actions.FailedCheckAction]("post-processed", actionType, actions.FailedCheckAction{
+			BlogID:    blogID,
+			CheckType: checkType,
+			FailedAt:  time.Now(),
+			Reason:    reason,
 		}, parentAct),
 	}
 }

@@ -21,6 +21,18 @@ type replay struct {
 	publisher  contracts.Publisher
 }
 
+// Register implements contracts.Replay.
+func (r *replay) Register(parentActionIdentifier string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, ok := r.eventStore[parentActionIdentifier]; !ok {
+		r.eventStore[parentActionIdentifier] = make([][]byte, 0)
+	}
+
+	return nil
+}
+
 // Replay event if it is a duplicate
 func (r *replay) Replay(actionId string) (bool, error) {
 	r.mu.Lock()
@@ -28,7 +40,6 @@ func (r *replay) Replay(actionId string) (bool, error) {
 
 	if eventData, ok := r.eventStore[actionId]; ok {
 		for _, data := range eventData {
-
 			aInfo, err := frameworkAction.ActionInfoFromPayload(data)
 			if err != nil {
 				return false, err

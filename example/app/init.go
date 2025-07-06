@@ -16,13 +16,13 @@ func initQueues() (contracts.Handler, contracts.Publisher, error) {
 		return nil, nil, err
 	}
 
-	replay := replay.New(snsPublisher)
 	db, err := connection.Open()
 	if err != nil {
 		fmt.Println("Cannot connect to the database", err.Error())
 		os.Exit(1)
 	}
 
+	replay := replay.New(snsPublisher, db)
 	sqsHandler, err := connector.Handler(connector.TypeSQS, replay, db)
 	if err != nil {
 		return nil, nil, err

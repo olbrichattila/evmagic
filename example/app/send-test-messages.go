@@ -9,7 +9,7 @@ import (
 )
 
 func sendTestMessages(snsPublisher contracts.Publisher) {
-	frameworkAction.PublishFromStruct[actions.BlogReceivedAction](snsPublisher, "new-posts", "blog-received", actions.BlogReceivedAction{
+	frameworkAction.PublishFromStruct[actions.BlogReceivedAction](snsPublisher, "post-processed", "blog-received", actions.BlogReceivedAction{
 		CreatedAt: time.Now(),
 		CreatedBy: "John Doe",
 		Blog:      "This is the blog post",

@@ -9,6 +9,12 @@ import (
 func InitRoutes(handler contracts.Handler, publisher contracts.Publisher) {
 	handler.Handlers(
 		contracts.HandlerDef{
+			Topic:       "check-failed-queue",
+			ActionType:  "blog-received",
+			Publisher:   publisher,
+			HandlerFunc: actionHandlers.BlogReceivedHandler,
+		},
+		contracts.HandlerDef{
 			Topic:       "spam-check-queue",
 			ActionType:  "blog-received",
 			Publisher:   publisher,

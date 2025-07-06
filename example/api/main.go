@@ -17,7 +17,7 @@ const (
 	awsURI       = "http://localhost:4566"
 	awsRegion    = "us-east-1"
 	awsAccountID = "000000000000"
-	topicName    = "new-posts"
+	topicName    = "post-processed"
 	actionType   = "blog-received"
 )
 
@@ -26,7 +26,12 @@ type blogAction struct {
 }
 
 func main() {
-	sendMessage(getPrompt())
+	x := 10000
+	for x > 0 {
+		x--
+		sendMessage(fmt.Sprintf("This is a blog post %d", x))
+	}
+	// sendMessage(getPrompt())
 }
 
 func getPrompt() string {

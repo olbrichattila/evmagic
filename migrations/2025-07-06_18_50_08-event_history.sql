@@ -1,0 +1,4 @@
+CREATE TABLE event_history (
+    event_id varchar(64) NOT NULL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

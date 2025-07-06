@@ -3,20 +3,19 @@ package actionHandlers
 import (
 	"app/actions"
 	"database/sql"
-	"fmt"
 
 	frameworkAction "github.com/olbrichattila/evmagic/pkg/actions/framework-action"
 	"github.com/olbrichattila/evmagic/pkg/connector/contracts"
 )
 
 func BlogReceivedPlagiarismHandler(tx *sql.Tx, message []byte) ([]contracts.ActionResult, error) {
-	act, err := frameworkAction.NewFromPayload[actions.BlogReceivedAction](message)
-	fmt.Println(act.AsAction().Blog, act.AsAction().CreatedAt, err)
+	act, err := frameworkAction.NewFromPayload[actions.BlogCheckAction](message)
+	//	fmt.Println(act.AsAction().BlogID, err)
 
-	r := createFailedActionResult[actions.BlogReceivedAction]("plagiarism-failed", "Plagiarism test reason", act.ActionData())
+	_, err = tx.Exec("UPDATE blogs SET banned = 1 WHERE id = ?", act.AsAction().BlogID)
+	if err != nil {
+		return nil, err
+	}
 
-	// Test replaying the same event
-	// bts, _ := act.AsBytes()
-	// r = append(r, contracts.ActionResult{Topic: act.Topic(), Body: bts})
-	return r, nil
+	return createFailedActionResult(act.AsAction().BlogID, "plagiarism-failed", "Plagiarism test reason", "Plagiarism", act.ActionData()), nil
 }

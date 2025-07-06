@@ -3,19 +3,19 @@ package actionHandlers
 import (
 	"app/actions"
 	"database/sql"
-	"fmt"
 
 	frameworkAction "github.com/olbrichattila/evmagic/pkg/actions/framework-action"
 	"github.com/olbrichattila/evmagic/pkg/connector/contracts"
 )
 
 func BlogReceivedSpamHandler(tx *sql.Tx, message []byte) ([]contracts.ActionResult, error) {
-	act, err := frameworkAction.NewFromPayload[actions.BlogReceivedAction](message)
-	fmt.Println(act.AsAction().Blog, act.AsAction().CreatedAt, err)
+	act, err := frameworkAction.NewFromPayload[actions.BlogCheckAction](message)
+	// fmt.Println(act.AsAction().BlogID, err)
 
-	_, err = tx.Exec("INSERT INTO blogs (created_at, created_by, blog) VALUES (?, ?, ?)", act.AsAction().CreatedAt, act.AsAction().CreatedBy, act.AsAction().Blog)
-	fmt.Println(err)
+	_, err = tx.Exec("UPDATE blogs SET banned = 1 WHERE id = ?", act.AsAction().BlogID)
+	if err != nil {
+		return nil, err
+	}
 
-	return createFailedActionResult[actions.BlogReceivedAction]("spam-failed", "Spam test reason", act.ActionData()), nil
-
+	return createFailedActionResult(act.AsAction().BlogID, "spam-failed", "Spam test reason", "Spam", act.ActionData()), nil
 }
