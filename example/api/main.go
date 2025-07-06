@@ -18,6 +18,7 @@ const (
 	awsRegion    = "us-east-1"
 	awsAccountID = "000000000000"
 	topicName    = "new-posts"
+	actionType   = "blog-received"
 )
 
 type blogAction struct {
@@ -59,10 +60,9 @@ func sendMessage(messageToPublish string) {
 		return
 	}
 
-	frameworkAction.PublishFromStruct[actions.BlogReceivedAction](snsPublisher, "new-posts", "blog-received", actions.BlogReceivedAction{
+	frameworkAction.PublishFromStruct[actions.BlogReceivedAction](snsPublisher, topicName, actionType, actions.BlogReceivedAction{
 		CreatedAt: time.Now(),
 		CreatedBy: "John Doe",
 		Blog:      messageToPublish,
 	})
-
 }
