@@ -1,6 +1,8 @@
 package connector
 
 import (
+	"database/sql"
+
 	"github.com/olbrichattila/evmagic/pkg/connector/contracts"
 )
 
@@ -10,7 +12,7 @@ type handlers struct {
 
 var handlerCache *handlers
 
-func Handler(qt QueueType) (contracts.Handler, error) {
+func Handler(qt QueueType, rp contracts.Replay, db *sql.DB) (contracts.Handler, error) {
 	if handlerCache == nil {
 		handlerCache = &handlers{
 			registered: make(map[QueueType]contracts.Handler, 0),
@@ -21,7 +23,7 @@ func Handler(qt QueueType) (contracts.Handler, error) {
 		return h, nil
 	}
 
-	hb, err := getHandler(qt)
+	hb, err := getHandler(qt, rp, db)
 	if err != nil {
 		return nil, err
 	}

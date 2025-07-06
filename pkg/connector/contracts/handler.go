@@ -1,10 +1,12 @@
 package contracts
 
+import "database/sql"
+
 type ActionResult struct {
 	Topic string
 	Body  []byte
 }
-type HandlerFunc func(msg []byte) ([]ActionResult, error)
+type HandlerFunc func(tx *sql.Tx, msg []byte) ([]ActionResult, error)
 
 type HandlerDef struct {
 	Topic       string

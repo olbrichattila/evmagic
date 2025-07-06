@@ -2,6 +2,7 @@ package sqs
 
 import (
 	"context"
+	"database/sql"
 	"net/url"
 
 	"github.com/ThreeDotsLabs/watermill"
@@ -23,9 +24,11 @@ const (
 	awsAccountID = "000000000000"
 )
 
-func New() (contracts.Handler, error) {
+func New(replay contracts.Replay, db *sql.DB) (contracts.Handler, error) {
 	h := &handler{
+		replay: replay,
 		Handler: baseHandler.Handler{
+			Db:     db,
 			Topics: map[string]map[string]contracts.HandlerFunc{},
 		},
 	}
@@ -39,6 +42,7 @@ func New() (contracts.Handler, error) {
 
 type handler struct {
 	baseHandler.Handler
+	replay     contracts.Replay
 	subscriber message.Subscriber
 	router     *message.Router
 }
@@ -55,7 +59,7 @@ func (h *handler) Handlers(hd ...contracts.HandlerDef) {
 }
 
 func (h *handler) Handle(topic, actionType string, publisher contracts.Publisher, hf contracts.HandlerFunc) {
-	h.Handler.InternalHandle(h.router, h.subscriber, publisher, topic, actionType, hf)
+	h.Handler.InternalHandle(h.router, h.replay, h.subscriber, publisher, topic, actionType, hf)
 }
 
 func (h *handler) setHandlerConf() error {

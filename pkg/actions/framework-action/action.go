@@ -18,15 +18,7 @@ type Action[T any] interface {
 	MessageIdentifier() string
 	ActionType() string
 	Topic() string
-}
-
-type ActionBase[T any] struct {
-	Topic             string `json:"topic"`
-	CorrelationId     string `json:"correlationId"`
-	CausationId       string `json:"causationId"`
-	MessageIdentifier string `json:"messageIdentifier"`
-	ActionType        string `json:"actionType"`
-	Content           T      `json:"content"`
+	ActionData() *ActionData
 }
 
 type SnsAction struct {
@@ -35,23 +27,43 @@ type SnsAction struct {
 	Message  string
 }
 
-type actionType struct {
-	ActionType string `json:"actionType"`
+type ActionData struct {
+	Topic             string `json:"topic"`
+	CorrelationId     string `json:"correlationId"`
+	CausationId       string `json:"causationId"`
+	MessageIdentifier string `json:"messageIdentifier"`
+	ActionType        string `json:"actionType"`
+}
+
+type ActionBase[T any] struct {
+	ActionData
+	Content T `json:"content"`
 }
 
 type action[T any] struct {
 	base ActionBase[T]
 }
 
-func New[T any](topic, actionType string, content any) (Action[T], error) {
+func New[T any](topic, actionType string, content any, parentActionData *ActionData) (Action[T], error) {
 	result := action[T]{}
 	result.base = ActionBase[T]{
-		CorrelationId:     uuid.NewString(),
-		CausationId:       uuid.NewString(),
-		Topic:             topic,
-		MessageIdentifier: uuid.NewString(),
-		ActionType:        actionType,
-		Content:           content.(T),
+		ActionData: ActionData{
+			Topic:             topic,
+			MessageIdentifier: uuid.NewString(),
+			CorrelationId:     "",
+			CausationId:       "",
+
+			ActionType: actionType,
+		},
+		Content: content.(T),
+	}
+
+	if parentActionData != nil {
+		result.base.CausationId = parentActionData.MessageIdentifier
+		result.base.CorrelationId = parentActionData.CorrelationId
+	} else {
+		result.base.CausationId = result.base.MessageIdentifier
+		result.base.CorrelationId = result.base.MessageIdentifier
 	}
 
 	return result, nil
@@ -101,4 +113,8 @@ func (a action[T]) ActionType() string {
 
 func (a action[T]) Topic() string {
 	return a.base.Topic
+}
+
+func (a action[T]) ActionData() *ActionData {
+	return &a.base.ActionData
 }

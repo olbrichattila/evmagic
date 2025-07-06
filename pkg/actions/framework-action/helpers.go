@@ -9,24 +9,32 @@ func AsSNSActionFromPayload(data []byte) (SnsAction, error) {
 	return helpers.ToStruct[SnsAction](data)
 }
 
-func ActionTypeFromPayload(data []byte) (string, error) {
+func ActionInfoFromSNSPayload(data []byte) (*ActionData, error) {
 	act, err := AsSNSActionFromPayload(data)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	res, err := helpers.ToStruct[actionType]([]byte(act.Message))
+	res, err := helpers.ToStruct[ActionData]([]byte(act.Message))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return res.ActionType, nil
-
+	return &res, nil
 }
 
-func CreateActionResult[T any](topic, actionType string, action any) contracts.ActionResult {
+func ActionInfoFromPayload(data []byte) (*ActionData, error) {
+	res, err := helpers.ToStruct[ActionData](data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func CreateActionResult[T any](topic, actionType string, action any, parent *ActionData) contracts.ActionResult {
 	// TODO error handling
-	failedAction, _ := New[T](topic, actionType, action.(T))
+	failedAction, _ := New[T](topic, actionType, action.(T), parent)
 	bytesRes, _ := failedAction.AsBytes()
 
 	return contracts.ActionResult{
@@ -35,11 +43,12 @@ func CreateActionResult[T any](topic, actionType string, action any) contracts.A
 	}
 }
 
-func PublishFromStruct[T any](publisher contracts.Publisher, topic, actionType string, action any) {
-	act, _ := New[T](topic, actionType, action)
+func PublishFromStruct[T any](publisher contracts.Publisher, topic, actionType string, action any, parent *ActionData) {
+	act, _ := New[T](topic, actionType, action, parent)
 	Publish[T](publisher, act)
 }
 
+// Publish (Not safe by itself as without parent it can break the correlation tree, use PublishFromStruct with parent instead if possible)
 func Publish[T any](publisher contracts.Publisher, action any) {
 	act := action.(Action[T])
 	actionBytes, _ := act.AsBytes()

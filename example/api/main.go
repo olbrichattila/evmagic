@@ -64,5 +64,5 @@ func sendMessage(messageToPublish string) {
 		CreatedAt: time.Now(),
 		CreatedBy: "John Doe",
 		Blog:      messageToPublish,
-	})
+	}, nil)
 }

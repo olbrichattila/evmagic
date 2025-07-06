@@ -3,6 +3,8 @@
 package connector
 
 import (
+	"database/sql"
+
 	frameworkErrors "github.com/olbrichattila/evmagic/pkg/connector/framework-errors"
 	snsHandler "github.com/olbrichattila/evmagic/pkg/connector/handler/sns"
 	sqsHandler "github.com/olbrichattila/evmagic/pkg/connector/handler/sqs"
@@ -32,12 +34,12 @@ func getPublisher(qt QueueType) (contracts.Publisher, error) {
 	}
 }
 
-func getHandler(qt QueueType) (contracts.Handler, error) {
+func getHandler(qt QueueType, rp contracts.Replay, db *sql.DB) (contracts.Handler, error) {
 	switch qt {
 	case TypeSNS:
-		return snsHandler.New()
+		return snsHandler.New(rp, db)
 	case TypeSQS:
-		return sqsHandler.New()
+		return sqsHandler.New(rp, db)
 	default:
 		return nil, frameworkErrors.ErrInvalidQueueType
 	}

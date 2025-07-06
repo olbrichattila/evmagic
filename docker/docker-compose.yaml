@@ -23,9 +23,24 @@ services:
       - "localstack_windmill_data:/var/lib/localstack"
     networks:
       - windmill-net
+  mysql:
+    image: mysql:8.4
+    container_name: mysql-windmill
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: emagic
+      MYSQL_USER: user
+      MYSQL_PASSWORD: mypassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_wmilldata:/var/lib/mysql
+    networks:
+      - windmill-net
 
 volumes:
   localstack_windmill_data:
+  mysql_wmilldata:
 
 networks:
   windmill-net:

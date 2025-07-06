@@ -1,6 +1,7 @@
 package baseHandler
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/ThreeDotsLabs/watermill/message"
@@ -9,11 +10,12 @@ import (
 )
 
 type Handler struct {
+	Db     *sql.DB
 	Topics map[string]map[string]contracts.HandlerFunc
 }
 
 // InternalHandle implements contracts.Handler.
-func (h *Handler) InternalHandle(router *message.Router, subscriber message.Subscriber, publisher contracts.Publisher, topic, actionType string, hf contracts.HandlerFunc) {
+func (h *Handler) InternalHandle(router *message.Router, replay contracts.Replay, subscriber message.Subscriber, publisher contracts.Publisher, topic, actionType string, hf contracts.HandlerFunc) {
 	if existingTopic, ok := h.Topics[topic]; ok {
 		existingTopic[actionType] = hf
 		return
@@ -30,23 +32,55 @@ func (h *Handler) InternalHandle(router *message.Router, subscriber message.Subs
 		topic, // SQS queue to publish to
 		nil,
 		func(msg *message.Message) ([]*message.Message, error) {
-			actionType, err := frameworkAction.ActionTypeFromPayload(msg.Payload)
+			tx, err := h.Db.Begin()
 			if err != nil {
 				// TODO log
+				fmt.Println("Error creating transaction")
 				return nil, fmt.Errorf("invalid action type: %w", err)
 			}
 
-			if handleFnc, ok := h.Topics[topic][actionType]; ok {
-				actionsToPublish, err := handleFnc(msg.Payload)
+			actionInfo, err := frameworkAction.ActionInfoFromSNSPayload(msg.Payload)
+			if err != nil {
+				// TODO log
+				tx.Rollback()
+				return nil, fmt.Errorf("invalid action type: %w", err)
+			}
+
+			// Message replay
+			replayed, err := replay.Replay(actionInfo.MessageIdentifier)
+			if err != nil {
+				// TODO log
+				tx.Rollback()
+				return nil, fmt.Errorf("invalid action type: %w", err)
+			}
+
+			if replayed {
+				tx.Rollback()
+				return nil, nil
+			}
+
+			if handleFnc, ok := h.Topics[topic][actionInfo.ActionType]; ok {
+				actionsToPublish, err := handleFnc(tx, msg.Payload)
 				if err == nil {
 					for _, msgToPub := range actionsToPublish {
 						err := publisher.Publish(msgToPub.Topic, msgToPub.Body)
 						if err != nil {
+							// TODO log
+							tx.Rollback()
+							return nil, err
+						}
+
+						err = replay.Store(actionInfo.MessageIdentifier, msgToPub.Body)
+						if err != nil {
+							// TODO log
+							tx.Rollback()
 							return nil, err
 						}
 					}
 				}
-				return nil, err
+
+				tx.Commit()
+				return nil, nil
 			}
 
 			// TODO log

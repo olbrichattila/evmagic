@@ -13,5 +13,5 @@ func sendTestMessages(snsPublisher contracts.Publisher) {
 		CreatedAt: time.Now(),
 		CreatedBy: "John Doe",
 		Blog:      "This is the blog post",
-	})
+	}, nil)
 }
