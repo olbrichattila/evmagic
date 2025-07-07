@@ -26,12 +26,12 @@ type blogAction struct {
 }
 
 func main() {
-	x := 10000
-	for x > 0 {
-		x--
-		sendMessage(fmt.Sprintf("This is a blog post %d", x))
-	}
-	// sendMessage(getPrompt())
+	// x := 10000
+	// for x > 0 {
+	// 	x--
+	// 	sendMessage(fmt.Sprintf("This is a blog post %d", x))
+	// }
+	sendMessage(getPrompt())
 }
 
 func getPrompt() string {
