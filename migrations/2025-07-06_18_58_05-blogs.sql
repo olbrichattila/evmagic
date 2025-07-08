@@ -4,4 +4,4 @@ CREATE TABLE blogs (
     created_by VARCHAR(255) NOT NULL,
     blog TEXT NOT NULL,
     banned TINYINT(1)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

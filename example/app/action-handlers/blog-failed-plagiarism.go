@@ -14,22 +14,19 @@ import (
 
 func BlogFailedPlagiarismHandler(tx *sql.Tx, message []byte) ([]contracts.ActionResult, error) {
 	act, err := frameworkAction.NewFromPayload[actions.FailedCheckAction](message)
-	// fmt.Println(act.AsAction().FailedAt, act.AsAction().Reason, act.AsAction().CheckType, err)
-
-	/// TEST DB helper
-	dbH := dbHelper.New(tx)
-	res := dbH.QueryAll("select * from blogs")
-	for row := range res {
-		fmt.Println(row)
+	if err != nil {
+		return nil, err
 	}
 
-	// Test entities
-	// dbH := dbHelper.New(tx)
-	blogs, err := entity.All[entities.Blogs](dbH)
-	fmt.Println(blogs, err)
+	err = entity.Save(dbHelper.New(tx), entities.BlogCheck{
+		BlogId:    act.AsAction().BlogID,
+		CheckType: act.AsAction().CheckType,
+		Reason:    act.AsAction().Reason,
+		CreatedAt: act.AsAction().FailedAt,
+	})
 
-	_, err = tx.Exec("INSERT INTO blog_checks (blog_id, check_type, reason, created_at) VALUES (?, ?, ?, ?)", act.AsAction().BlogID, act.AsAction().CheckType, act.AsAction().Reason, act.AsAction().FailedAt)
 	if err != nil {
+		fmt.Println("??", err)
 		return nil, err
 	}
 

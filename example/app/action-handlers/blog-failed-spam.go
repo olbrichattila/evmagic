@@ -2,17 +2,28 @@ package actionHandlers
 
 import (
 	"app/actions"
+	"app/entities"
 	"database/sql"
 
 	frameworkAction "github.com/olbrichattila/evmagic/pkg/actions/framework-action"
 	"github.com/olbrichattila/evmagic/pkg/connector/contracts"
+	dbHelper "github.com/olbrichattila/evmagic/pkg/database/dbhelper"
+	"github.com/olbrichattila/evmagic/pkg/entity"
 )
 
 func BlogFailedSpamHandler(tx *sql.Tx, message []byte) ([]contracts.ActionResult, error) {
 	act, err := frameworkAction.NewFromPayload[actions.FailedCheckAction](message)
-	// fmt.Println(act.AsAction().FailedAt, act.AsAction().Reason, act.AsAction().CheckType, err)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = tx.Exec("INSERT INTO blog_checks (blog_id, check_type, reason, created_at) VALUES (?, ?, ?, ?)", act.AsAction().BlogID, act.AsAction().CheckType, act.AsAction().Reason, act.AsAction().FailedAt)
+	err = entity.Save(dbHelper.New(tx), entities.BlogCheck{
+		BlogId:    act.AsAction().BlogID,
+		CheckType: act.AsAction().CheckType,
+		Reason:    act.AsAction().Reason,
+		CreatedAt: act.AsAction().FailedAt,
+	})
+
 	if err != nil {
 		return nil, err
 	}

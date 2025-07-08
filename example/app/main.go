@@ -23,6 +23,7 @@ func main() {
 
 	sqsHandler, snsPublisher, err := initQueues()
 	if err != nil {
+		// TODO error log
 		fmt.Println(err)
 		return
 	}
