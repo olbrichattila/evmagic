@@ -2,24 +2,28 @@ package connector
 
 import (
 	"database/sql"
+	"sync"
 
 	"github.com/olbrichattila/evmagic/pkg/connector/contracts"
 )
 
-type handlers struct {
+func New() *Handlers {
+	return &Handlers{
+		registered: map[QueueType]contracts.Handler{},
+	}
+
+}
+
+type Handlers struct {
+	mu         sync.Mutex
 	registered map[QueueType]contracts.Handler
 }
 
-var handlerCache *handlers
+func (h *Handlers) Handler(qt QueueType, rp contracts.Replay, db *sql.DB) (contracts.Handler, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
-func Handler(qt QueueType, rp contracts.Replay, db *sql.DB) (contracts.Handler, error) {
-	if handlerCache == nil {
-		handlerCache = &handlers{
-			registered: make(map[QueueType]contracts.Handler, 0),
-		}
-	}
-
-	if h, ok := handlerCache.registered[qt]; ok {
+	if h, ok := h.registered[qt]; ok {
 		return h, nil
 	}
 
@@ -28,7 +32,7 @@ func Handler(qt QueueType, rp contracts.Replay, db *sql.DB) (contracts.Handler, 
 		return nil, err
 	}
 
-	handlerCache.registered[qt] = hb
+	h.registered[qt] = hb
 
 	return hb, nil
 }

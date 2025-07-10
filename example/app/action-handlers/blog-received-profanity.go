@@ -18,14 +18,14 @@ func BlogReceivedProfanityHandler(tx *sql.Tx, message []byte) ([]contracts.Actio
 	dbH := dbHelper.New(tx)
 	blog, err := entity.ById[entities.Blogs](dbH, act.AsAction().BlogID)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Blog received", err)
 		return nil, err
 	}
 
 	blog.Banned = true
 	err = entity.Save(dbH, blog)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("update banned", err)
 		return nil, err
 	}
 

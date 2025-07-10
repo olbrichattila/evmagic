@@ -18,14 +18,14 @@ func BlogReceivedPlagiarismHandler(tx *sql.Tx, message []byte) ([]contracts.Acti
 	dbH := dbHelper.New(tx)
 	blog, err := entity.ById[entities.Blogs](dbH, act.AsAction().BlogID)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("received", err)
 		return nil, err
 	}
 
 	blog.Banned = true
 	err = entity.Save(dbH, blog)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Update banned", err)
 		return nil, err
 	}
 	return createFailedActionResult(act.AsAction().BlogID, "plagiarism-failed", "Plagiarism test reason", "Plagiarism", act.ActionData()), nil

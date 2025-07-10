@@ -8,6 +8,8 @@ import (
 	"syscall"
 
 	"app/routes"
+
+	"github.com/olbrichattila/evmagic/pkg/database/connection"
 )
 
 type myAction struct {
@@ -21,7 +23,22 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	sqsHandler, snsPublisher, err := initQueues()
+	go process()
+
+	// sendTestMessages(snsPublisher)
+
+	<-sigs // Block here until signal received
+	fmt.Println("Term signal received, shutting down...")
+}
+
+func process() {
+	db, err := connection.Open()
+	if err != nil {
+		fmt.Println("Cannot connect to the database", err.Error())
+		os.Exit(1)
+	}
+	defer db.Close()
+	sqsHandler, snsPublisher, err := initQueues(db)
 	if err != nil {
 		// TODO error log
 		fmt.Println(err)
@@ -29,9 +46,5 @@ func main() {
 	}
 
 	routes.InitRoutes(sqsHandler, snsPublisher)
-	go sqsHandler.Run()
-	sendTestMessages(snsPublisher)
-
-	<-sigs // Block here until signal received
-	fmt.Println("Term signal received, shutting down...")
+	sqsHandler.Run()
 }
