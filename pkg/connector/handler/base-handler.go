@@ -74,23 +74,23 @@ func (h *Handler) InternalHandle(router *message.Router, replay contracts.Replay
 					return nil, err
 				}
 
+				tx.Commit()
+
+				// Publish child actions
 				for _, msgToPub := range actionsToPublish {
 					err := publisher.Publish(msgToPub.Topic, msgToPub.Body)
 					if err != nil {
 						// TODO log
-						tx.Rollback()
 						return nil, err
 					}
 
 					err = replay.Store(topic+"_"+actionInfo.MessageIdentifier, msgToPub.Body)
 					if err != nil {
 						// TODO log
-						tx.Rollback()
 						return nil, err
 					}
 				}
 
-				tx.Commit()
 				return nil, nil
 			}
 
